@@ -1,26 +1,27 @@
+cmake_minimum_required(VERSION 3.5)
 project(ExtendedKF)
 
-cmake_minimum_required (VERSION 3.5)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_definitions(-std=c++11)
+set(EKF_CORE_SOURCES
+    src/tools.cpp
+    src/FusionEKF.cpp
+    src/kalman_filter.cpp)
 
-set(CXX_FLAGS "-Wall")
-set(CMAKE_CXX_FLAGS "${CXX_FLAGS}")
+add_library(ekf_core ${EKF_CORE_SOURCES})
+target_include_directories(ekf_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-set(sources src/main.cpp src/tools.cpp src/FusionEKF.cpp src/kalman_filter.cpp src/tools.h src/FusionEKF.h src/kalman_filter.h)
+include(CTest)
+if(BUILD_TESTING)
+  add_executable(ekf_tests tests/ekf_tests.cpp)
+  target_link_libraries(ekf_tests ekf_core)
+  add_test(NAME ekf_tests COMMAND ekf_tests)
+endif()
 
-
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") 
-
-include_directories(/usr/local/include)
-include_directories(/usr/local/opt/openssl/include)
-link_directories(/usr/local/lib)
-link_directories(/usr/local/opt/openssl/lib)
-link_directories(/usr/local/Cellar/libuv/1*/lib)
-
-endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") 
-
-
-add_executable(ExtendedKF ${sources})
-
-target_link_libraries(ExtendedKF z ssl uv uWS)
+option(BUILD_SIMULATOR "Build the uWebSockets simulator executable" OFF)
+if(BUILD_SIMULATOR)
+  add_executable(ExtendedKF src/main.cpp)
+  target_link_libraries(ExtendedKF ekf_core z ssl uv uWS)
+endif()
