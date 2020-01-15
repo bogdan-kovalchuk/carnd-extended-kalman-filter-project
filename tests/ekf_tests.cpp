@@ -45,10 +45,21 @@ void TestRmseCharacterization() {
   Require(Near(rmse(3), 0.1), "RMSE velocity y");
 }
 
+void TestRmseExactEstimates() {
+  Tools tools;
+  std::vector<Eigen::VectorXd> values;
+  values.push_back(Vector4(-2.0, 0.0, 3.5, -4.0));
+  values.push_back(Vector4(1.0, 2.0, -3.0, 4.0));
+
+  const Eigen::VectorXd rmse = tools.CalculateRMSE(values, values);
+  Require(rmse.isZero(1e-12), "exact estimates have zero RMSE");
+}
+
 }  // namespace
 
 int main() {
   TestRmseCharacterization();
+  TestRmseExactEstimates();
   std::cout << "All EKF tests passed" << std::endl;
   return 0;
 }
