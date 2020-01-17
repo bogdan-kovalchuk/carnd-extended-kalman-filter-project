@@ -23,6 +23,13 @@ class Tools {
                                 const std::vector<Eigen::VectorXd> &ground_truth);
 
   /**
+   * Calculate RMSE with an incremental mean of squared residuals.
+   */
+  Eigen::VectorXd CalculateRMSEIncremental(
+      const std::vector<Eigen::VectorXd> &estimations,
+      const std::vector<Eigen::VectorXd> &ground_truth);
+
+  /**
    * A helper method to calculate Jacobians.
    */
   Eigen::MatrixXd CalculateJacobian(const Eigen::VectorXd& x_state);

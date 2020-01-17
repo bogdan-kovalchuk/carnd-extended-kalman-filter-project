@@ -43,6 +43,22 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations, const vector<
     return rmse;
 }
 
+VectorXd Tools::CalculateRMSEIncremental(const vector<VectorXd> &estimations,
+                                         const vector<VectorXd> &ground_truth) {
+    VectorXd rmse = VectorXd::Zero(4);
+    if (estimations.empty() || estimations.size() != ground_truth.size()) {
+        std::cout << "Invalid estimation or ground_truth data" << std::endl;
+        return rmse;
+    }
+
+    for (size_t i = 0; i < estimations.size(); ++i) {
+        VectorXd residual = estimations[i] - ground_truth[i];
+        const VectorXd squared = residual.array().square().matrix();
+        rmse += (squared - rmse) / static_cast<double>(i + 1);
+    }
+    return rmse.array().sqrt().matrix();
+}
+
 MatrixXd Tools::CalculateJacobian(const VectorXd& x_state)
 {
 
