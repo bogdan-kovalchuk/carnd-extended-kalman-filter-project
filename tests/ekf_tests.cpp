@@ -55,11 +55,27 @@ void TestRmseExactEstimates() {
   Require(rmse.isZero(1e-12), "exact estimates have zero RMSE");
 }
 
+void TestIncrementalRmseMatchesBatch() {
+  Tools tools;
+  std::vector<Eigen::VectorXd> estimations;
+  estimations.push_back(Vector4(10.0, -3.0, 0.5, 2.0));
+  estimations.push_back(Vector4(-1.0, 4.0, -2.0, 1.0));
+  std::vector<Eigen::VectorXd> truth;
+  truth.push_back(Vector4(8.0, -4.0, 1.5, 4.0));
+  truth.push_back(Vector4(2.0, 3.0, -1.0, -2.0));
+
+  const Eigen::VectorXd batch = tools.CalculateRMSE(estimations, truth);
+  const Eigen::VectorXd incremental = tools.CalculateRMSEIncremental(estimations, truth);
+  Require((batch - incremental).norm() < 1e-12,
+          "incremental RMSE matches batch RMSE");
+}
+
 }  // namespace
 
 int main() {
   TestRmseCharacterization();
   TestRmseExactEstimates();
+  TestIncrementalRmseMatchesBatch();
   std::cout << "All EKF tests passed" << std::endl;
   return 0;
 }
