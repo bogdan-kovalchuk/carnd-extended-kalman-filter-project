@@ -1,6 +1,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -70,12 +71,29 @@ void TestIncrementalRmseMatchesBatch() {
           "incremental RMSE matches batch RMSE");
 }
 
+void TestRmseRejectsInvalidInputs() {
+  Tools tools;
+  std::vector<Eigen::VectorXd> valid(1, Vector4(1.0, 2.0, 3.0, 4.0));
+  std::vector<Eigen::VectorXd> short_value;
+  short_value.push_back(Eigen::VectorXd::Zero(3));
+  std::vector<Eigen::VectorXd> non_finite(1, Vector4(1.0, 2.0, 3.0, 4.0));
+  non_finite[0](2) = std::numeric_limits<double>::infinity();
+
+  Require(tools.CalculateRMSE(valid, short_value).isZero(1e-12),
+          "RMSE rejects a wrong state dimension");
+  Require(tools.CalculateRMSE(non_finite, valid).isZero(1e-12),
+          "RMSE rejects non-finite values");
+  Require(tools.CalculateRMSEIncremental(std::vector<Eigen::VectorXd>(), valid).isZero(1e-12),
+          "incremental RMSE rejects an empty input");
+}
+
 }  // namespace
 
 int main() {
   TestRmseCharacterization();
   TestRmseExactEstimates();
   TestIncrementalRmseMatchesBatch();
+  TestRmseRejectsInvalidInputs();
   std::cout << "All EKF tests passed" << std::endl;
   return 0;
 }
