@@ -32,6 +32,8 @@ Tools::~Tools() {}
 
 VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations, const vector<VectorXd> &ground_truth)
 {
+    // Batch approach: O(n * d) time and O(d) extra space for d = 4 state values.
+    // It sums squared residuals before a single division, which is the direct RMSE definition.
     VectorXd rmse = VectorXd::Zero(kStateDimension);
 
     // check the validity of the following inputs:
@@ -65,6 +67,8 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations, const vector<
 
 VectorXd Tools::CalculateRMSEIncremental(const vector<VectorXd> &estimations,
                                          const vector<VectorXd> &ground_truth) {
+    // Alternative O(n * d) / O(d) approach.  The running mean avoids a growing
+    // accumulator and is useful when observations are consumed as a stream.
     VectorXd rmse = VectorXd::Zero(kStateDimension);
     if (!ValidRmseInputs(estimations, ground_truth)) {
         std::cout << "Invalid estimation or ground_truth data" << std::endl;
