@@ -87,6 +87,23 @@ void TestRmseRejectsInvalidInputs() {
           "incremental RMSE rejects an empty input");
 }
 
+void TestJacobianCharacterization() {
+  Tools tools;
+  const Eigen::VectorXd state = Vector4(3.0, 4.0, 5.0, 6.0);
+  const Eigen::MatrixXd jacobian = tools.CalculateJacobian(state);
+
+  Require(jacobian.rows() == 3 && jacobian.cols() == 4,
+          "Jacobian has radar measurement dimensions");
+  Require(Near(jacobian(0, 0), 0.6, 1e-6) && Near(jacobian(0, 1), 0.8, 1e-6),
+          "Jacobian range derivatives");
+  Require(Near(jacobian(1, 0), -0.16, 1e-6) && Near(jacobian(1, 1), 0.12, 1e-6),
+          "Jacobian bearing derivatives");
+  Require(Near(jacobian(2, 0), 0.064, 1e-6) && Near(jacobian(2, 1), -0.048, 1e-6),
+          "Jacobian range-rate position derivatives");
+  Require(Near(jacobian(2, 2), 0.6, 1e-6) && Near(jacobian(2, 3), 0.8, 1e-6),
+          "Jacobian range-rate velocity derivatives");
+}
+
 }  // namespace
 
 int main() {
@@ -94,6 +111,7 @@ int main() {
   TestRmseExactEstimates();
   TestIncrementalRmseMatchesBatch();
   TestRmseRejectsInvalidInputs();
+  TestJacobianCharacterization();
   std::cout << "All EKF tests passed" << std::endl;
   return 0;
 }
