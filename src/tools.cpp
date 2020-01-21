@@ -1,4 +1,5 @@
 #include "tools.h"
+#include <cmath>
 #include <iostream>
 
 using Eigen::VectorXd;
@@ -8,6 +9,7 @@ using std::vector;
 namespace {
 
 const int kStateDimension = 4;
+const double kJacobianStep = 1e-5;
 
 bool ValidRmseInputs(const vector<VectorXd>& estimations,
                      const vector<VectorXd>& ground_truth) {
@@ -22,6 +24,25 @@ bool ValidRmseInputs(const vector<VectorXd>& estimations,
         }
     }
     return true;
+}
+
+double NormalizeAngle(double angle) {
+    const double pi = 3.14159265358979323846;
+    while (angle > pi) {
+        angle -= 2.0 * pi;
+    }
+    while (angle <= -pi) {
+        angle += 2.0 * pi;
+    }
+    return angle;
+}
+
+VectorXd RadarProjection(const VectorXd& state) {
+    VectorXd measurement(3);
+    const double rho = std::sqrt(state(0) * state(0) + state(1) * state(1));
+    measurement << rho, std::atan2(state(1), state(0)),
+        (state(0) * state(2) + state(1) * state(3)) / rho;
+    return measurement;
 }
 
 }  // namespace
@@ -111,4 +132,20 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state)
             py*(vx*py - vy*px)/c3, px*(px*vy - py*vx)/c3, px/c2, py/c2;
 
     return Hj;
+}
+
+MatrixXd Tools::CalculateJacobianNumerical(const VectorXd& x_state) {
+    MatrixXd jacobian(3, kStateDimension);
+    for (int column = 0; column < kStateDimension; ++column) {
+        VectorXd forward = x_state;
+        VectorXd backward = x_state;
+        forward(column) += kJacobianStep;
+        backward(column) -= kJacobianStep;
+        const VectorXd forward_measurement = RadarProjection(forward);
+        const VectorXd backward_measurement = RadarProjection(backward);
+        VectorXd difference = forward_measurement - backward_measurement;
+        difference(1) = NormalizeAngle(difference(1));
+        jacobian.col(column) = difference / (2.0 * kJacobianStep);
+    }
+    return jacobian;
 }

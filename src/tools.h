@@ -34,6 +34,11 @@ class Tools {
    */
   Eigen::MatrixXd CalculateJacobian(const Eigen::VectorXd& x_state);
 
+  /**
+   * Numerically approximate the radar Jacobian with central differences.
+   */
+  Eigen::MatrixXd CalculateJacobianNumerical(const Eigen::VectorXd& x_state);
+
 };
 
 #endif  // TOOLS_H_
