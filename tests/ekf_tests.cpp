@@ -104,6 +104,15 @@ void TestJacobianCharacterization() {
           "Jacobian range-rate velocity derivatives");
 }
 
+void TestNumericalJacobianMatchesAnalytic() {
+  Tools tools;
+  const Eigen::VectorXd state = Vector4(-2.5, 4.0, 1.5, -3.0);
+  const Eigen::MatrixXd analytic = tools.CalculateJacobian(state);
+  const Eigen::MatrixXd numerical = tools.CalculateJacobianNumerical(state);
+  Require((analytic - numerical).norm() < 1e-5,
+          "central-difference Jacobian matches the analytic Jacobian");
+}
+
 }  // namespace
 
 int main() {
@@ -112,6 +121,7 @@ int main() {
   TestIncrementalRmseMatchesBatch();
   TestRmseRejectsInvalidInputs();
   TestJacobianCharacterization();
+  TestNumericalJacobianMatchesAnalytic();
   std::cout << "All EKF tests passed" << std::endl;
   return 0;
 }
