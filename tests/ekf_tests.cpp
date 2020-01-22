@@ -113,6 +113,21 @@ void TestNumericalJacobianMatchesAnalytic() {
           "central-difference Jacobian matches the analytic Jacobian");
 }
 
+void TestJacobianRejectsUnsafeStates() {
+  Tools tools;
+  Eigen::VectorXd wrong_dimension = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd non_finite = Vector4(1.0, 2.0, 3.0, 4.0);
+  non_finite(0) = std::numeric_limits<double>::quiet_NaN();
+  const Eigen::VectorXd near_origin = Vector4(1e-5, 0.0, 1.0, 1.0);
+
+  Require(tools.CalculateJacobian(wrong_dimension).isZero(1e-12),
+          "Jacobian rejects a wrong state dimension");
+  Require(tools.CalculateJacobian(non_finite).isZero(1e-12),
+          "Jacobian rejects non-finite states");
+  Require(tools.CalculateJacobianNumerical(near_origin).isZero(1e-12),
+          "numerical Jacobian rejects near-zero positions");
+}
+
 }  // namespace
 
 int main() {
@@ -122,6 +137,7 @@ int main() {
   TestRmseRejectsInvalidInputs();
   TestJacobianCharacterization();
   TestNumericalJacobianMatchesAnalytic();
+  TestJacobianRejectsUnsafeStates();
   std::cout << "All EKF tests passed" << std::endl;
   return 0;
 }
