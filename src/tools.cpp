@@ -113,6 +113,7 @@ VectorXd Tools::CalculateRMSEIncremental(const vector<VectorXd> &estimations,
 
 MatrixXd Tools::CalculateJacobian(const VectorXd& x_state)
 {
+    // Closed-form derivatives take O(1) time for the fixed four-state model.
     MatrixXd Hj = MatrixXd::Zero(3, kStateDimension);
     if (!ValidJacobianState(x_state)) {
         return Hj;
@@ -138,6 +139,8 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state)
 }
 
 MatrixXd Tools::CalculateJacobianNumerical(const VectorXd& x_state) {
+    // Central differences evaluate the radar model 2d times (O(d)); this is a
+    // slower independent reference for tests and future measurement models.
     MatrixXd jacobian = MatrixXd::Zero(3, kStateDimension);
     if (!ValidJacobianState(x_state)) {
         return jacobian;
