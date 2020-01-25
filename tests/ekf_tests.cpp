@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "tools.h"
+#include "FusionEKF.h"
 
 namespace {
 
@@ -24,6 +25,24 @@ Eigen::VectorXd Vector4(double a, double b, double c, double d) {
   Eigen::VectorXd value(4);
   value << a, b, c, d;
   return value;
+}
+
+MeasurementPackage Laser(double px, double py, long long timestamp) {
+  MeasurementPackage measurement;
+  measurement.sensor_type_ = MeasurementPackage::LASER;
+  measurement.timestamp_ = timestamp;
+  measurement.raw_measurements_ = Eigen::VectorXd(2);
+  measurement.raw_measurements_ << px, py;
+  return measurement;
+}
+
+MeasurementPackage Radar(double rho, double phi, double rho_dot, long long timestamp) {
+  MeasurementPackage measurement;
+  measurement.sensor_type_ = MeasurementPackage::RADAR;
+  measurement.timestamp_ = timestamp;
+  measurement.raw_measurements_ = Eigen::VectorXd(3);
+  measurement.raw_measurements_ << rho, phi, rho_dot;
+  return measurement;
 }
 
 void TestRmseCharacterization() {
@@ -128,6 +147,17 @@ void TestJacobianRejectsUnsafeStates() {
           "numerical Jacobian rejects near-zero positions");
 }
 
+void TestLaserInitialization() {
+  FusionEKF fusion;
+  fusion.ProcessMeasurement(Laser(2.5, -1.5, 1000000));
+
+  Require((fusion.ekf_.x_ - Vector4(2.5, -1.5, 0.0, 0.0)).norm() < 1e-12,
+          "laser initialization preserves position and clears velocity");
+  Require(Near(fusion.ekf_.P_(0, 0), 1.0) && Near(fusion.ekf_.P_(1, 1), 1.0) &&
+              Near(fusion.ekf_.P_(2, 2), 1000.0) && Near(fusion.ekf_.P_(3, 3), 1000.0),
+          "laser initialization keeps configured uncertainty");
+}
+
 }  // namespace
 
 int main() {
@@ -138,6 +168,7 @@ int main() {
   TestJacobianCharacterization();
   TestNumericalJacobianMatchesAnalytic();
   TestJacobianRejectsUnsafeStates();
+  TestLaserInitialization();
   std::cout << "All EKF tests passed" << std::endl;
   return 0;
 }
