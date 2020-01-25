@@ -158,6 +158,31 @@ void TestLaserInitialization() {
           "laser initialization keeps configured uncertainty");
 }
 
+void TestRadarInitializationAndMeasurementPaths() {
+  FusionEKF radar_fusion;
+  radar_fusion.ProcessMeasurement(Radar(5.0, 0.0, 2.0, 1000000));
+  Require((radar_fusion.ekf_.x_ - Vector4(5.0, 0.0, 2.0, 0.0)).norm() < 1e-12,
+          "radar initialization converts polar velocity");
+
+  FusionEKF fusion;
+  fusion.ProcessMeasurement(Laser(1.0, 1.0, 1000000));
+  fusion.ProcessMeasurement(Laser(1.1, 1.0, 1100000));
+  Require(Near(fusion.ekf_.F_(0, 2), 0.1, 1e-6) &&
+              Near(fusion.ekf_.F_(1, 3), 0.1, 1e-6),
+          "laser update applies the elapsed timestamp interval");
+  Require(Near(fusion.ekf_.Q_(0, 0), 0.000225, 1e-7) &&
+              Near(fusion.ekf_.Q_(2, 2), 0.09, 1e-6),
+          "process noise follows the elapsed interval");
+
+  fusion.ProcessMeasurement(Radar(1.5, 0.7, 0.0, 1200000));
+  Require(fusion.ekf_.H_.rows() == 3 && fusion.ekf_.H_.cols() == 4,
+          "radar path installs a Jacobian measurement model");
+  Require(fusion.ekf_.x_.allFinite() && fusion.ekf_.P_.allFinite(),
+          "measurement paths keep state and covariance finite");
+  Require((fusion.ekf_.P_ - fusion.ekf_.P_.transpose()).norm() < 1e-9,
+          "measurement paths preserve covariance symmetry");
+}
+
 }  // namespace
 
 int main() {
@@ -169,6 +194,7 @@ int main() {
   TestNumericalJacobianMatchesAnalytic();
   TestJacobianRejectsUnsafeStates();
   TestLaserInitialization();
+  TestRadarInitializationAndMeasurementPaths();
   std::cout << "All EKF tests passed" << std::endl;
   return 0;
 }
