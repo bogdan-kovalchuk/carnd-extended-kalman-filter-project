@@ -86,18 +86,22 @@ void FusionEKF::Initialize(const MeasurementPackage &measurement_pack) {
 
 void FusionEKF::ConfigurePrediction(double delta_t) {
   const double dt_2 = delta_t * delta_t;
-  const double dt_3 = dt_2 * delta_t;
-  const double dt_4 = dt_3 * delta_t;
   const double noise_ax = 9.0;
   const double noise_ay = 9.0;
 
   ekf_.F_(0, 2) = delta_t;
   ekf_.F_(1, 3) = delta_t;
-  ekf_.Q_ = MatrixXd(4, 4);
-  ekf_.Q_ << dt_4 / 4.0 * noise_ax, 0, dt_3 / 2.0 * noise_ax, 0,
-      0, dt_4 / 4.0 * noise_ay, 0, dt_3 / 2.0 * noise_ay,
-      dt_3 / 2.0 * noise_ax, 0, dt_2 * noise_ax, 0,
-      0, dt_3 / 2.0 * noise_ay, 0, dt_2 * noise_ay;
+  // The acceleration gain form is equivalent to the expanded Q equations but
+  // keeps the constant-acceleration noise model explicit.
+  MatrixXd acceleration_gain(4, 2);
+  acceleration_gain << dt_2 / 2.0, 0,
+      0, dt_2 / 2.0,
+      delta_t, 0,
+      0, delta_t;
+  MatrixXd acceleration_noise = MatrixXd::Zero(2, 2);
+  acceleration_noise(0, 0) = noise_ax;
+  acceleration_noise(1, 1) = noise_ay;
+  ekf_.Q_ = acceleration_gain * acceleration_noise * acceleration_gain.transpose();
 }
 
 void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {

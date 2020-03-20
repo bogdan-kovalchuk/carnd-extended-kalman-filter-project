@@ -173,6 +173,9 @@ void TestRadarInitializationAndMeasurementPaths() {
   Require(Near(fusion.ekf_.Q_(0, 0), 0.000225, 1e-7) &&
               Near(fusion.ekf_.Q_(2, 2), 0.09, 1e-6),
           "process noise follows the elapsed interval");
+  Require(Near(fusion.ekf_.Q_(0, 2), 0.0045, 1e-6) &&
+              Near(fusion.ekf_.Q_(2, 0), 0.0045, 1e-6),
+          "process noise keeps position and velocity covariance coupled");
 
   fusion.ProcessMeasurement(Radar(1.5, 0.7, 0.0, 1200000));
   Require(fusion.ekf_.H_.rows() == 3 && fusion.ekf_.H_.cols() == 4,
