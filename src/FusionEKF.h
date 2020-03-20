@@ -43,9 +43,10 @@ class FusionEKF {
   Eigen::MatrixXd R_laser_;
   Eigen::MatrixXd R_radar_;
  Eigen::MatrixXd H_laser_;
- Eigen::MatrixXd Hj_;
+  Eigen::MatrixXd Hj_;
 
   void Initialize(const MeasurementPackage &measurement_pack);
+  void ConfigurePrediction(double delta_t);
 };
 
 #endif // FusionEKF_H_

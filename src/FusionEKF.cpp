@@ -84,6 +84,22 @@ void FusionEKF::Initialize(const MeasurementPackage &measurement_pack) {
   is_initialized_ = true;
 }
 
+void FusionEKF::ConfigurePrediction(double delta_t) {
+  const double dt_2 = delta_t * delta_t;
+  const double dt_3 = dt_2 * delta_t;
+  const double dt_4 = dt_3 * delta_t;
+  const double noise_ax = 9.0;
+  const double noise_ay = 9.0;
+
+  ekf_.F_(0, 2) = delta_t;
+  ekf_.F_(1, 3) = delta_t;
+  ekf_.Q_ = MatrixXd(4, 4);
+  ekf_.Q_ << dt_4 / 4.0 * noise_ax, 0, dt_3 / 2.0 * noise_ax, 0,
+      0, dt_4 / 4.0 * noise_ay, 0, dt_3 / 2.0 * noise_ay,
+      dt_3 / 2.0 * noise_ax, 0, dt_2 * noise_ax, 0,
+      0, dt_3 / 2.0 * noise_ay, 0, dt_2 * noise_ay;
+}
+
 void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   if (!is_initialized_) {
     Initialize(measurement_pack);
@@ -103,27 +119,9 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 
    //compute the time elapsed between the current and previous measurements
    //dt - expressed in seconds
-   float dt = (measurement_pack.timestamp_ - previous_timestamp_) / 1000000.0;
+   const double dt = (measurement_pack.timestamp_ - previous_timestamp_) / 1000000.0;
    previous_timestamp_ = measurement_pack.timestamp_;
-
-   float dt_2 = dt * dt;
-   float dt_3 = dt_2 * dt;
-   float dt_4 = dt_3 * dt;
-
-   //modify the F matrix so that the time is integrated
-   ekf_.F_(0, 2) = dt;
-   ekf_.F_(1, 3) = dt;
-
-   //set the noises
-   float noise_ax = 9;
-   float noise_ay = 9;
-
-   //set the process covariance matrix Q
-   ekf_.Q_ = MatrixXd(4, 4);
-   ekf_.Q_ <<  dt_4/4*noise_ax, 0, dt_3/2*noise_ax, 0,
-               0, dt_4/4*noise_ay, 0, dt_3/2*noise_ay,
-               dt_3/2*noise_ax, 0, dt_2*noise_ax, 0,
-               0, dt_3/2*noise_ay, 0, dt_2*noise_ay;
+   ConfigurePrediction(dt);
 
    ekf_.Predict();
     /**
