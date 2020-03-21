@@ -47,6 +47,7 @@ class FusionEKF {
 
   void Initialize(const MeasurementPackage &measurement_pack);
   void ConfigurePrediction(double delta_t);
+  bool ValidMeasurement(const MeasurementPackage &measurement_pack) const;
 };
 
 #endif // FusionEKF_H_

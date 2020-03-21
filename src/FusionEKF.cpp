@@ -1,12 +1,9 @@
 #include "FusionEKF.h"
-#include <iostream>
 #include "Eigen/Dense"
 #include "tools.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
-using std::cout;
-using std::endl;
 using std::vector;
 
 /**
@@ -104,9 +101,24 @@ void FusionEKF::ConfigurePrediction(double delta_t) {
   ekf_.Q_ = acceleration_gain * acceleration_noise * acceleration_gain.transpose();
 }
 
+bool FusionEKF::ValidMeasurement(const MeasurementPackage &measurement_pack) const {
+  const int expected_size = measurement_pack.sensor_type_ == MeasurementPackage::LASER ? 2 :
+      (measurement_pack.sensor_type_ == MeasurementPackage::RADAR ? 3 : 0);
+  return expected_size != 0 &&
+      measurement_pack.raw_measurements_.size() == expected_size &&
+      measurement_pack.raw_measurements_.allFinite();
+}
+
 void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
+  if (!ValidMeasurement(measurement_pack)) {
+    return;
+  }
   if (!is_initialized_) {
     Initialize(measurement_pack);
+    return;
+  }
+
+  if (measurement_pack.timestamp_ < previous_timestamp_) {
     return;
   }
 
@@ -150,7 +162,4 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       ekf_.Update(measurement_pack.raw_measurements_);
   }
 
-  // print the output
-  cout << "x_ = " << ekf_.x_ << endl;
-  cout << "P_ = " << ekf_.P_ << endl;
 }

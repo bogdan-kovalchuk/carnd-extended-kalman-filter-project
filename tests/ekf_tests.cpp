@@ -186,6 +186,25 @@ void TestRadarInitializationAndMeasurementPaths() {
           "measurement paths preserve covariance symmetry");
 }
 
+void TestFusionRejectsMalformedAndStaleMeasurements() {
+  FusionEKF fusion;
+  MeasurementPackage malformed = Laser(1.0, 2.0, 1000000);
+  malformed.raw_measurements_ = Eigen::VectorXd::Zero(3);
+  fusion.ProcessMeasurement(malformed);
+  fusion.ProcessMeasurement(Laser(1.0, 2.0, 1000000));
+
+  const Eigen::VectorXd before_state = fusion.ekf_.x_;
+  const Eigen::MatrixXd before_covariance = fusion.ekf_.P_;
+  MeasurementPackage non_finite = Radar(2.0, 0.0, 1.0, 1100000);
+  non_finite.raw_measurements_(1) = std::numeric_limits<double>::infinity();
+  fusion.ProcessMeasurement(non_finite);
+  fusion.ProcessMeasurement(Laser(9.0, 9.0, 999999));
+
+  Require((fusion.ekf_.x_ - before_state).norm() < 1e-12 &&
+              (fusion.ekf_.P_ - before_covariance).norm() < 1e-12,
+          "malformed and stale measurements leave the filter unchanged");
+}
+
 }  // namespace
 
 int main() {
@@ -198,6 +217,7 @@ int main() {
   TestJacobianRejectsUnsafeStates();
   TestLaserInitialization();
   TestRadarInitializationAndMeasurementPaths();
+  TestFusionRejectsMalformedAndStaleMeasurements();
   std::cout << "All EKF tests passed" << std::endl;
   return 0;
 }
