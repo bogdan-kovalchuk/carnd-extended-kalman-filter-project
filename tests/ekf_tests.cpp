@@ -205,6 +205,17 @@ void TestFusionRejectsMalformedAndStaleMeasurements() {
           "malformed and stale measurements leave the filter unchanged");
 }
 
+void TestFusionHandlesRadarAtOrigin() {
+  FusionEKF fusion;
+  fusion.ProcessMeasurement(Radar(0.0, 0.0, 0.0, 1000000));
+  fusion.ProcessMeasurement(Radar(0.0, 0.0, 0.0, 1100000));
+
+  Require(fusion.ekf_.x_.allFinite() && fusion.ekf_.P_.allFinite(),
+          "near-origin radar updates do not create non-finite filter values");
+  Require(fusion.ekf_.H_.isZero(1e-12),
+          "near-origin radar updates use the guarded zero Jacobian");
+}
+
 }  // namespace
 
 int main() {
@@ -218,6 +229,7 @@ int main() {
   TestLaserInitialization();
   TestRadarInitializationAndMeasurementPaths();
   TestFusionRejectsMalformedAndStaleMeasurements();
+  TestFusionHandlesRadarAtOrigin();
   std::cout << "All EKF tests passed" << std::endl;
   return 0;
 }
