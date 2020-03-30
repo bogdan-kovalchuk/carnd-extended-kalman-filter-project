@@ -89,7 +89,8 @@ void FusionEKF::ConfigurePrediction(double delta_t) {
   ekf_.F_(0, 2) = delta_t;
   ekf_.F_(1, 3) = delta_t;
   // The acceleration gain form is equivalent to the expanded Q equations but
-  // keeps the constant-acceleration noise model explicit.
+  // keeps the constant-acceleration noise model explicit.  Both are O(1) for
+  // this fixed model; the factorized form is easier to extend with new noise.
   MatrixXd acceleration_gain(4, 2);
   acceleration_gain << dt_2 / 2.0, 0,
       0, dt_2 / 2.0,
@@ -150,6 +151,8 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
    * - Update the state and covariance matrices.
    */
 
+  // Sensor selection is O(1).  The following Kalman update is dominated by
+  // innovation covariance inversion (O(m^3), m = 2 for laser or 3 for radar).
   if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
       Hj_ = tools.CalculateJacobian(ekf_.x_);
       ekf_.H_ = Hj_;
